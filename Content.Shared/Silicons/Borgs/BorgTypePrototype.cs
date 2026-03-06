@@ -85,6 +85,12 @@ public sealed partial class BorgTypePrototype : IPrototype
     public EntProtoId[] DefaultModules = [];
 
     /// <summary>
+    /// Flashlight settings to set when this type is selected.
+    /// </summary>
+    [DataField]
+    public ComponentRegistry? Flashlight { get; set; }
+
+    /// <summary>
     /// Additional components to add to the borg entity when this type is selected.
     /// </summary>
     [DataField]

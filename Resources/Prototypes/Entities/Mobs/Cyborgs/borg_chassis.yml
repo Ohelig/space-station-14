@@ -468,6 +468,16 @@
     - Science
     - Supply
     - Expedition
+  - type: HandheldLight
+    wattage: 1.0 # 5x typical flashlight
+    blinkingBehaviourId: blinking
+    radiatingBehaviourId: radiating
+  - type: PointLight
+    enabled: false
+    mask: null
+    radius: 8
+    energy: 5
+    netsync: false
 #Starlight End
 
 - type: entity

@@ -1,8 +1,10 @@
 ﻿using Content.Server.Inventory;
 using Content.Shared.Inventory;
+using Content.Shared.Light.Components; //Starlight
 using Content.Shared.Radio.Components;
 using Content.Shared.Silicons.Borgs;
 using Content.Shared.Silicons.Borgs.Components;
+using Robust.Shared.GameObjects; //Starlight
 using Robust.Shared.Prototypes;
 using Robust.Shared.Utility;
 
@@ -35,6 +37,18 @@ public sealed class BorgSwitchableTypeSystem : SharedBorgSwitchableTypeSystem
             Dirty(ent.Owner, activeRadio);
         }
         //Starlight end
+
+        // Starlight begin: floodlight for mining borg
+        // Update flashlight power
+        if (prototype.Flashlight is { } flashlight)
+        {
+            EntityManager.AddComponents(ent, flashlight, removeExisting: true);
+        // It seems like the other functions, like handling AddComponents, seem to handle removing old components (HUDs, etc.) that a new chassis type shouldn't have.
+        // However, because the flashlight settings are only defined in the base borg rather than each new chassis type, there's not an easy way to know what flashlight settings should be if there are none defined
+        // Therefore if you switch FROM a type with custom flashlight settings TO one without, you'll get to keep your modified flashlight.
+        }
+
+        // //Starlight end
 
         // Borg transponder for the robotics console
         if (TryComp(ent, out BorgTransponderComponent? transponder))
@@ -76,7 +90,7 @@ public sealed class BorgSwitchableTypeSystem : SharedBorgSwitchableTypeSystem
 
         if (prototype.AddComponents is { } addComponents)
         {
-            EntityManager.AddComponents(ent, addComponents);
+            EntityManager.AddComponents(ent, addComponents, false);
         }
 
         // Configure inventory template (used for hat spacing)
