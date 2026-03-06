@@ -90,7 +90,7 @@ public sealed class BorgSwitchableTypeSystem : SharedBorgSwitchableTypeSystem
 
         if (prototype.AddComponents is { } addComponents)
         {
-            EntityManager.AddComponents(ent, addComponents, false);
+            EntityManager.AddComponents(ent, addComponents);
         }
 
         // Configure inventory template (used for hat spacing)
