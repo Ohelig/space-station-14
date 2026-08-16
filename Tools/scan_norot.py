@@ -79,7 +79,7 @@ def _parse_prototypes(text: str) -> list[dict]:
             if current:
                 protos.append(current)
             current = [line]
-        elif line.startswith("- type:") and current:
+        elif line.startswith("- type:") and not line[0].isspace() and current:
             # A new top-level prototype of a different type — end the current block
             protos.append(current)
             current = [line]
@@ -184,9 +184,13 @@ def _check_rsi_directional(rsi_path: str, textures_root: Path) -> tuple[str, str
         return "HEURISTIC", f"Could not read meta.json ({exc})"
 
     states = meta.get("states", [])
-    directional_states = [
-        s.get("name", "?") for s in states if int(s.get("directions", 1)) > 1
-    ]
+    directional_states = []
+    for s in states:
+        try:
+            if int(s.get("directions", 1)) > 1:
+                directional_states.append(s.get("name", "?"))
+        except (TypeError, ValueError):
+            pass
     if directional_states:
         return "CONFIRMED", (
             f"directions > 1 in states: {', '.join(directional_states)}"
@@ -307,8 +311,12 @@ def main() -> int:
     args = parser.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
-    proto_root = Path(args.proto_root) if args.proto_root else repo_root / "Resources" / "Prototypes"
-    textures_root = Path(args.textures_root) if args.textures_root else repo_root / "Resources" / "Textures"
+    proto_root = (
+        (repo_root / args.proto_root) if args.proto_root else repo_root / "Resources" / "Prototypes"
+    )
+    textures_root = (
+        (repo_root / args.textures_root) if args.textures_root else repo_root / "Resources" / "Textures"
+    )
 
     if not proto_root.exists():
         print(f"ERROR: Prototype directory not found: {proto_root}", file=sys.stderr)
