@@ -19,6 +19,7 @@ public partial class Profile
     public bool Enabled { get; set; }
 
     public StarLightModel.CharacterInfo? CharacterInfo { get; set; }
+    public List<StarLightModel.StationAiCustomizationEntry> StationAiCustomizations { get; } = new();
 }
 
 public abstract partial class ServerDbContext
@@ -52,6 +53,17 @@ public sealed class StarLightModel : DataModelBase
                 .HasForeignKey<CharacterInfo>(e => e.ProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        modelBuilder.Entity<StationAiCustomizationEntry>(entity =>
+        {
+            entity.HasOne(e => e.Profile)
+                .WithMany(p => p.StationAiCustomizations)
+                .HasForeignKey(e => e.ProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.ProfileId, e.GroupId })
+                .IsUnique();
+        });
     }
 
     public class StarLightProfile
@@ -64,6 +76,23 @@ public sealed class StarLightModel : DataModelBase
         public List<string> CyberneticIds { get; set; } = [];
         public float Width { get; set; } = 1f;
         public float Height { get; set; } = 1f;
+    }
+
+    /// <summary>
+    /// One selected Station AI customization option per group, so new groups need no schema change.
+    /// </summary>
+    [Table("sl_station_ai_customization")]
+    public class StationAiCustomizationEntry
+    {
+        public int Id { get; set; }
+        public int ProfileId { get; set; }
+        public virtual Profile Profile { get; set; } = null!;
+
+        [MaxLength(128)]
+        public string GroupId { get; set; } = null!;
+
+        [MaxLength(128)]
+        public string ProtoId { get; set; } = null!;
     }
 
     public class PlayerDataDTO

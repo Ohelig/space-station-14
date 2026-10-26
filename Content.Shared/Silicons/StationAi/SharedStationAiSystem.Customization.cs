@@ -31,30 +31,47 @@ public abstract partial class SharedStationAiSystem
 
     private void OnStationAiCustomization(Entity<StationAiCoreComponent> entity, ref StationAiCustomizationMessage args)
     {
-        if (!_protoManager.Resolve(args.GroupProtoId, out var groupPrototype) || !_protoManager.Resolve(args.CustomizationProtoId, out var customizationProto))
-            return;
-
         if (!TryGetHeld((entity, entity.Comp), out var held))
             return;
 
         if (!TryComp<StationAiCustomizationComponent>(held, out var stationAiCustomization))
             return;
 
-        if (stationAiCustomization.ProtoIds.TryGetValue(args.GroupProtoId, out var protoId) && protoId == args.CustomizationProtoId)
+        SetCustomization((held.Value, stationAiCustomization), args.GroupProtoId, args.CustomizationProtoId); // Starlight-edit
+    }
+
+    // Starlight begin
+    /// <summary>
+    /// Applies a customization option to an AI brain and refreshes the hologram or core appearance.
+    /// </summary>
+    public void SetCustomization(
+        Entity<StationAiCustomizationComponent> ent,
+        ProtoId<StationAiCustomizationGroupPrototype> groupProtoId,
+        ProtoId<StationAiCustomizationPrototype> customizationProtoId)
+    {
+        if (!_protoManager.Resolve(groupProtoId, out var groupPrototype) || !_protoManager.HasIndex(customizationProtoId))
             return;
 
-        stationAiCustomization.ProtoIds[args.GroupProtoId] = args.CustomizationProtoId;
+        if (ent.Comp.ProtoIds.TryGetValue(groupProtoId, out var protoId) && protoId == customizationProtoId)
+            return;
 
-        Dirty(held.Value, stationAiCustomization);
+        ent.Comp.ProtoIds[groupProtoId] = customizationProtoId;
+
+        Dirty(ent);
 
         // Update hologram
         if (groupPrototype.Category == StationAiCustomizationType.Hologram)
-            UpdateHolographicAvatar((held.Value, stationAiCustomization));
+            UpdateHolographicAvatar(ent);
 
         // Update core iconography
-        if (groupPrototype.Category == StationAiCustomizationType.CoreIconography && TryComp<StationAiHolderComponent>(entity, out var stationAiHolder))
-            UpdateAppearance((entity, stationAiHolder));
+        if (groupPrototype.Category == StationAiCustomizationType.CoreIconography &&
+            _containers.TryGetContainingContainer(ent.Owner, out var container) &&
+            TryComp<StationAiHolderComponent>(container.Owner, out var stationAiHolder))
+        {
+            UpdateAppearance((container.Owner, stationAiHolder));
+        }
     }
+    // Starlight end
 
     // Starlight begin
     private void OnStationAiRename(EntityUid uid, StationAiCoreComponent comp, StationAiRenameMessage args)

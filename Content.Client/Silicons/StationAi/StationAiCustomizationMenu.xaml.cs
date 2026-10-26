@@ -36,21 +36,7 @@ public sealed partial class StationAiCustomizationMenu : FancyWindow
         stationAiSystem.TryGetHeld((owner, stationAiCore), out var insertedAi);
         _entManager.TryGetComponent<StationAiCustomizationComponent>(insertedAi, out var stationAiCustomization);
 
-        // Create UI entires for each group of customizations
-        var groupPrototypes = _protoManager.EnumeratePrototypes<StationAiCustomizationGroupPrototype>();
-        groupPrototypes = groupPrototypes.OrderBy(x => x.ID); // To ensure consistency in presentation
-
-        foreach (var groupPrototype in groupPrototypes)
-        {
-            StationAiCustomizationPrototype? selectedPrototype = null;
-
-            if (stationAiCustomization?.ProtoIds.TryGetValue(groupPrototype, out var selectedProtoId) == true)
-                _protoManager.Resolve(selectedProtoId, out selectedPrototype);
-
-            _buttonGroups[groupPrototype] = new ButtonGroup();
-            _groupContainers[groupPrototype] = new StationAiCustomizationGroupContainer(groupPrototype, selectedPrototype, _buttonGroups[groupPrototype], this, _protoManager);
-            CustomizationGroupsContainer.AddTab(_groupContainers[groupPrototype], Loc.GetString(groupPrototype.Name));
-        }
+        BuildGroups(stationAiCustomization?.ProtoIds); // Starlight-edit
 
         Title = Loc.GetString("station-ai-customization-menu");
 
@@ -75,6 +61,43 @@ public sealed partial class StationAiCustomizationMenu : FancyWindow
         };
         //Starlight end
     }
+
+    // Starlight begin
+    /// <summary>
+    /// Builds the menu without an AI entity, e.g. for choosing customizations in the character editor.
+    /// </summary>
+    /// <param name="selections">The currently selected option for each group.</param>
+    public StationAiCustomizationMenu(IReadOnlyDictionary<ProtoId<StationAiCustomizationGroupPrototype>, ProtoId<StationAiCustomizationPrototype>> selections)
+    {
+        RobustXamlLoader.Load(this);
+        IoCManager.InjectDependencies(this);
+
+        BuildGroups(selections);
+
+        Title = Loc.GetString("station-ai-customization-menu");
+    }
+
+    /// <summary>
+    /// Creates a tab for every customization group, so newly added groups show up automatically.
+    /// </summary>
+    private void BuildGroups(IReadOnlyDictionary<ProtoId<StationAiCustomizationGroupPrototype>, ProtoId<StationAiCustomizationPrototype>>? selections)
+    {
+        var groupPrototypes = _protoManager.EnumeratePrototypes<StationAiCustomizationGroupPrototype>();
+        groupPrototypes = groupPrototypes.OrderBy(x => x.ID); // To ensure consistency in presentation
+
+        foreach (var groupPrototype in groupPrototypes)
+        {
+            StationAiCustomizationPrototype? selectedPrototype = null;
+
+            if (selections?.TryGetValue(groupPrototype, out var selectedProtoId) == true)
+                _protoManager.Resolve(selectedProtoId, out selectedPrototype);
+
+            _buttonGroups[groupPrototype] = new ButtonGroup();
+            _groupContainers[groupPrototype] = new StationAiCustomizationGroupContainer(groupPrototype, selectedPrototype, _buttonGroups[groupPrototype], this, _protoManager);
+            CustomizationGroupsContainer.AddTab(_groupContainers[groupPrototype], Loc.GetString(groupPrototype.Name));
+        }
+    }
+    // Starlight end
 
     public void OnSendStationAiCustomizationMessage
         (ProtoId<StationAiCustomizationGroupPrototype> groupProtoId, ProtoId<StationAiCustomizationPrototype> customizationProtoId)

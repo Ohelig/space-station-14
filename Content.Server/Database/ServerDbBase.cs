@@ -21,6 +21,7 @@ using Content.Shared.Humanoid.Markings;
 using Content.Shared.Preferences;
 using Content.Shared.Preferences.Loadouts;
 using Content.Shared.Roles;
+using Content.Shared.Silicons.StationAi; // Starlight
 using Microsoft.EntityFrameworkCore;
 using Robust.Shared.Enums;
 using Robust.Shared.Network;
@@ -57,6 +58,7 @@ namespace Content.Server.Database
                 .Include(p => p.Profiles) // Starlight
                     .ThenInclude(h => h.StarLightProfile) // Starlight
                 .Include(p => p.Profiles).ThenInclude(h => h.CharacterInfo)// Starlight
+                .Include(p => p.Profiles).ThenInclude(h => h.StationAiCustomizations) // Starlight
                 .Include(p => p.Profiles)
                     .ThenInclude(h => h.Loadouts)
                     .ThenInclude(l => l.Groups)
@@ -118,6 +120,7 @@ namespace Content.Server.Database
                     .ThenInclude(l => l.Groups)
                     .ThenInclude(group => group.Loadouts)
                 .Include(p => p.CharacterInfo) // Starlight-edit
+                .Include(p => p.StationAiCustomizations) // Starlight
                 // Cosmatic Drift Record System-start: Pull forward existing CD profile state when editing a saved slot
                 .Include(p => p.CDProfile)
                     // Entity Framework will populate CharacterRecordEntries for any existing CDProfile,
@@ -372,6 +375,10 @@ namespace Content.Server.Database
                 speciesLoadout // Far Horizons
             );
             // Cosmatic Drift Record System: Rehydrate saved CD records into the mutable profile copy
+            humanoid.StationAiCustomization = profile.StationAiCustomizations
+                .ToDictionary(
+                    e => new ProtoId<StationAiCustomizationGroupPrototype>(e.GroupId),
+                    e => new ProtoId<StationAiCustomizationPrototype>(e.ProtoId)); // Starlight
             if (profile.CDProfile?.CharacterRecords != null)
             {
                 var records = RecordsSerialization.Deserialize(profile.CDProfile.CharacterRecords, profile.CDProfile.CharacterRecordEntries); // Load player-authored records from storage
@@ -449,6 +456,13 @@ namespace Content.Server.Database
                 humanoid.TraitPreferences
                         .Select(t => new Trait { TraitName = t })
             );
+            // Starlight start
+            profile.StationAiCustomizations.Clear();
+            profile.StationAiCustomizations.AddRange(
+                humanoid.StationAiCustomization
+                    .Select(e => new StarLightModel.StationAiCustomizationEntry { GroupId = e.Key, ProtoId = e.Value })
+            );
+            // Starlight end
             // Cosmatic Drift Record System-start: Persist CD record updates back onto the database profile
             profile.CDProfile ??= new CDModel.CDProfile(); // Ensure the EF entity exists before serializing records
             var storedRecords = humanoid.CDCharacterRecords ?? PlayerProvidedCharacterRecords.DefaultRecords();

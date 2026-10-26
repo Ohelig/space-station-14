@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using Content.Shared.CCVar;
 using Content.Shared.Humanoid.Prototypes;
+using Content.Shared.Silicons.StationAi;
 using Robust.Shared.Prototypes;
 
 // ReSharper disable once CheckNamespace
@@ -27,6 +28,12 @@ public sealed partial class HumanoidCharacterProfile
     [DataField] public string ForcedPrototype { get; set; } = ""; // Starlight
 
     [DataField] public List<string> Cybernetics = [];
+
+    /// <summary>
+    /// Station AI customization choices applied on spawn. Groups without an entry keep the brain's default.
+    /// </summary>
+    [DataField]
+    public Dictionary<ProtoId<StationAiCustomizationGroupPrototype>, ProtoId<StationAiCustomizationPrototype>> StationAiCustomization { get; set; } = new();
 
     [DataField] public string PhysicalDescription { get; set; } = string.Empty;
 
@@ -89,6 +96,44 @@ public sealed partial class HumanoidCharacterProfile
     public HumanoidCharacterProfile WithCybernetics(List<string> cybernetics)
     {
         return new(this) { Cybernetics = cybernetics, };
+    }
+
+    public HumanoidCharacterProfile WithStationAiCustomization(
+        ProtoId<StationAiCustomizationGroupPrototype> group,
+        ProtoId<StationAiCustomizationPrototype> customization)
+    {
+        var copy = new HumanoidCharacterProfile(this);
+        copy.StationAiCustomization[group] = customization;
+        return copy;
+    }
+
+    private bool StationAiCustomizationEquals(HumanoidCharacterProfile other)
+    {
+        if (StationAiCustomization.Count != other.StationAiCustomization.Count)
+            return false;
+
+        foreach (var (group, customization) in StationAiCustomization)
+        {
+            if (!other.StationAiCustomization.TryGetValue(group, out var otherCustomization) ||
+                customization != otherCustomization)
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Drops entries whose group or option no longer exists, or whose option is not part of the group.
+    /// </summary>
+    private void EnsureValidStationAiCustomization(IPrototypeManager prototypeManager)
+    {
+        foreach (var (group, customization) in StationAiCustomization.ToArray())
+        {
+            if (!prototypeManager.TryIndex(group, out var groupProto) ||
+                !prototypeManager.HasIndex(customization) ||
+                !groupProto.ProtoIds.Contains(customization))
+                StationAiCustomization.Remove(group);
+        }
     }
 
     /// <summary>

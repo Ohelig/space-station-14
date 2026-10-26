@@ -202,6 +202,7 @@ namespace Content.Shared.Preferences
                 : PlayerProvidedCharacterRecords.DefaultRecords();
             CDCharacterRecords.EnsureValid();
             // Cosmatic Drift Record System-end
+            StationAiCustomization = new(other.StationAiCustomization); // Starlight
         }
 
         /// <summary>
@@ -508,6 +509,7 @@ namespace Content.Shared.Preferences
             if (Species != other.Species) return false;
             if (CustomSpecieName != other.CustomSpecieName) return false; // Starlight
             if (!Cybernetics.SequenceEqual(other.Cybernetics)) return false; // Starlight
+            if (!StationAiCustomizationEquals(other)) return false; // Starlight
             if (SpawnPriority != other.SpawnPriority) return false;
             if (!_jobPreferences.SequenceEqual(other._jobPreferences)) return false;
             if (!_antagPreferences.SequenceEqual(other._antagPreferences)) return false;
@@ -541,6 +543,7 @@ namespace Content.Shared.Preferences
             if (Species != other.Species) throw new DebugAssertException($"Species doesn't match expected '{Species.Id}' got '{other.Species.Id}'");;
             if (CustomSpecieName != other.CustomSpecieName) throw new DebugAssertException($"CustomSpecieName doesn't match expected '{CustomSpecieName}' got '{other.CustomSpecieName}'");
             if (!Cybernetics.SequenceEqual(other.Cybernetics)) throw new DebugAssertException($"Cybernetics doesn't match expected '{Cybernetics}' got '{other.Cybernetics}'");
+            if (!StationAiCustomizationEquals(other)) throw new DebugAssertException("StationAiCustomization doesn't match");
             if (SpawnPriority != other.SpawnPriority) throw new DebugAssertException($"SpawnPriority doesn't match expected '{SpawnPriority}' got '{other.SpawnPriority}'");
             if (!_jobPreferences.SequenceEqual(other._jobPreferences)) throw new DebugAssertException($"_jobPreferences doesn't match expected '{_jobPreferences}' got '{other._jobPreferences}'");;
             if (!_antagPreferences.SequenceEqual(other._antagPreferences)) throw new DebugAssertException($"_antagPreferences doesn't match expected '{_antagPreferences}' got '{other._antagPreferences}'");
@@ -669,6 +672,8 @@ namespace Content.Shared.Preferences
             {
                 Cybernetics = [];
             }
+
+            EnsureValidStationAiCustomization(prototypeManager);
             // Starlight - End
 
             string flavortext;
@@ -848,6 +853,7 @@ namespace Content.Shared.Preferences
             hashCode.Add((int)SpawnPriority);
             hashCode.Add(Enabled);
             hashCode.Add(Cybernetics); // Starlight
+            hashCode.Add(StationAiCustomization.Count); // Starlight
             return hashCode.ToHashCode();
         }
 
